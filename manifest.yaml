@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-config
+data:
+  frequency: 60
+  cities: London:2643743,Basel:7285161,Cardiff:2653822,Preveza:254698
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus-weather
+  name: prometheus-weather
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-weather
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: prometheus-weather
+    spec:
+      containers:
+      - image: danielives/prometheus-weather:v1
+        name: prometheus-weather
+        ports:
+        - containerPort: 8000
+          protocol: TCP
+        env:
+        - name: FREQUENCY
+          valueFrom:
+            configMapKeyRef:
+              name: weather-config
+              key: frequency
+        - name: CITY_CODES
+          valueFrom:
+            configMapKeyRef:
+              name: weather-config
+              key: cities
+        - name: OWM_KEY
+          valueFrom:
+            secretKeyRef:
+              name: prometheus-weather
+              key: api-key
